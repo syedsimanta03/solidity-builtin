@@ -13,10 +13,14 @@ contract Lottery{
     constructor(){
         // initializing the owner to the address that deploys the contract
         manager = msg.sender; 
+        //manager is automatically added to the lottery, without sending any ether.
+         players.push(payable(manager));
     }
     
     // declaring the receive() function that is necessary to receive ETH
     receive () payable external{
+        //manager of the lottery can not participate in the lottery.
+        require(msg.sender != manager);
         // each player sends exactly 0.1 ETH 
         require(msg.value == 0.1 ether);
         // appending the player to the players array
@@ -36,11 +40,11 @@ contract Lottery{
     }
     
     
-    // selecting the winner
+   // selecting the winner
     function pickWinner() public{
         // only the manager can pick a winner if there are at least 3 players in the lottery
         require(msg.sender == manager);
-        require (players.length >= 3);
+        require (players.length >= 10);
         
         uint r = random();
         address payable winner;
@@ -50,8 +54,14 @@ contract Lottery{
     
         winner = players[index]; // this is the winner
         
-        // transferring the entire contract's balance to the winner
-        winner.transfer(getBalance());
+        uint managerFee = (getBalance() * 10 ) / 100; // manager fee is 10%
+        uint winnerPrize = (getBalance() * 90 ) / 100;     // winner prize is 90%
+        
+        // transferring 90% of contract's balance to the winner
+        winner.transfer(winnerPrize);
+        
+        // transferring 10% of contract's balance to the manager
+        payable(manager).transfer(managerFee);
         
         // resetting the lottery for the next round
         players = new address payable[](0);
